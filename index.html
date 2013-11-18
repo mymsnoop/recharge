@@ -1,0 +1,147 @@
+<html ng-app="recharge">
+<head>
+    <title>Bulk Recharge</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+    <script src="js/jquery-1.9.1.js"></script>
+    <script src="js/jquery-ui-1.10.3.custom.js"></script>
+    <script src="bootstrap/js/bootstrap.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/popup.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
+    <script type="text/javascript">
+        function validate(evt) {
+            var theEvent = evt || window.event;
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode( key );
+            var regex = /[0-9]|\./;
+            if( !regex.test(key) ) {
+                theEvent.returnValue = false;
+                if(theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+
+        $(function(){
+            $(".home-ctn").show();
+            $(".account-ctn").hide();
+             $("#home").click(function(){
+                  $(".home-ctn").show();
+                 $(".account-ctn").hide();
+             });
+
+            $("#account").click(function(){
+                $(".home-ctn").hide();
+                $(".account-ctn").show();
+            });
+        });
+    </script>
+</head>
+<body>
+<h1>Bulk Recharge</h1>
+<div class="btn-group">
+    <button type="button" id="home" class="btn btn-default" onclick="">Home</button>
+    <button type="button" id="account" class="btn btn-default" onclick="">Account</button>
+</div>
+ <br><br>
+<div ng-controller="NumberCheck" class="home-ctn">
+    <span style="{{'display:'+groupsAvl()}}">You haven't added any new phone numbers yet.Click Add Number to start!</span>
+    <div class="group-div" ng-repeat="subgroup in groups">
+        <div class="controls">
+            <div class="input-group">
+                <span class="input-group-addon">Name</span>
+                <input type="text" placeholder="{{subgroup.name!=''?subgroup.name:'Enter Group Name'}}" ng-enter="saveState()" value="{{subgroup.name}}" ng-model="subgroup.name" class="form-control" ng-enter="namePress(name,subgroup)">
+            </div>
+            <div class="input-group">
+                <span class="input-group-addon">Denomination</span>
+                <input type="text" placeholder="{{parseInt(subgroup.denomination)}}" ng-enter="saveState()" value="{{parseInt(subgroup.denomination==''?50:subgroup.denomination)}}" ng-model="subgroup.denomination" onkeypress='validate(event)' class="form-control" ng-enter="denominationPress(denomination,subgroup)">
+                <span class="input-group-addon">INR</span>
+            </div>
+            <br />
+            <div class="form-group has-error">
+                <input type="text" class="form-control" placeholder="Add Phone Number" ng-model="phno" ng-enter="enterPress(phno,subgroup)" onkeypress='validate(event)'>
+                <div style="float: right"><img src="img/TICK.gif" width="30px" height="30px" style="{{'display:'+isCorrect()}}"> </div>
+            </div>
+            <button  ng-click="delete(subgroup)" class="btn btn-default btn-mini">Delete Group</button>
+        </div>
+        <div class="number-list">
+<ul class="unstyled">
+    <li ng-repeat="element in numbers | filter:{group:subgroup.id} track by $index" class=" numbers success-false">
+       <div><span>{{element.number}}</span><button class="close"  ng-click="remove(element)">&times;</button></div>
+    </li>
+</ul>
+        </div>
+    </div>
+    <div class="btn-group">
+        <button type="button" ng-click="addGroup()" class="add-group btn btn-default" onclick="">Add Numbers</button>
+        <button type="button" class="topopup add-group btn btn-default" ng-click="variety()" ng-show="canProceed()">Proceed</button>
+    </div>
+    <div id="toPopup">
+
+        	  <div class="close">&times;</div>
+              <span class="ecs_tooltip">Press Esc to close <span class="arrow"></span></span>
+            <span class="recharge-value">Total Amount: {{totalValue()}} INR</span>
+            <br />
+            <h2>Choose your preferred recharge provider.</h2>
+             <div id="popup_content">
+             <div class="providers" ng-repeat="pv in options">
+                 <div style="font-size: large;">
+                 <span>{{pv.name}}</span>
+                 <span>({{pv.count}} {{pv.count>1?"Numbers":"Number"}})</span>
+                 </div>
+                 <br>
+                 <div class="vendors" ng-repeat="dud in matrix[pv.name]">
+                     <span>{{dud}}({{percentage(dud)}}%)</span>
+                     <div>
+                         <input type="radio" name="pv.name" style="float:left;" />
+                         <div class="progress progress-{{setColor(dud)}} progress-striped" style="margin-bottom: 9px;">
+                             <div class="bar" style="{{'width:'+percentage(dud)+'%'}}"></div>
+                         </div>
+                     </div>
+
+
+                 </div>
+             </div>
+            <h2>Choose your preferred payment gateway.</h2>
+            <ul class="unstyled">
+                <li ng-repeat="element in gateways" class="success-{{element.status}}">
+                    <div><input type="radio" name="gateway" /><span>{{element}}</span></div>
+                </li>
+            </ul>
+                 <button ng-click="recharge()" class="close-btn add-group btn btn-default btn-lg">Pay</button>
+                 <button class="close-btn add-group btn btn-default btn-lg">Cancel</button>
+             </div>
+
+           </div> <!--toPopup end-->
+       <div id="backgroundPopup"></div>
+</div>
+
+<div ng-controller="History" class="account-ctn">
+    <p>Numbers in <span style="color: #dbc59e">red</span>  are pending.</p>
+    <br>
+    <p>Numbers in <span style="color: #a9dba9">green</span> are processed.</p>
+    <div class="form-group has-error" style="text-align: center">
+        <input type="text" class="form-control" placeholder="Search by Name" ng-model="grpname">
+    </div>
+    <div class="form-group has-error" style="text-align: center">
+        <input type="text" class="form-control" placeholder="Search by Denomination" ng-model="denom">
+    </div>
+    <div class="group-div" ng-repeat="subgroup in groups |filter:{name:grpname,denomination:denom}">
+        <div class="controls">
+                <span>Name:</span>
+                <span>{{subgroup.name}}</span>
+                 <br>
+                <span>Denomination:</span>
+                <span>{{subgroup.denomination}} INR</span>
+            <br>
+        </div>
+        <div class="number-list">
+            <ul class="unstyled">
+                <li ng-repeat="element in numbers | filter:{group:subgroup.id}" class=" numbers success-{{element.status}}">
+                    <div><span>{{element.number}}</span><button class="close" ng-show="{{!element.status}}" ng-click="remove(element)">&times;</button></div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+</body>
+</html>
