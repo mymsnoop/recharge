@@ -5,6 +5,7 @@ recharge portal UI
 
 *HOME
 -Add numbers using the dynamic group generation. 
+-Check for input numbers(only numbers with length 10,12,14 are allowed)[for demo purpose].
 -Group name is not mandatory.
 -Denomination when left blank becomes 'default' of 50 INR.
 -There is no limit to numbers in a group.
